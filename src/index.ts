@@ -155,13 +155,13 @@ export const validateJson = (value: unknown, test: TJsonData, key: string = 'roo
   return validateBaseJsonData(value, test, key);
 };
 export const isValidJson = <T extends TFirstJsonData>(value: unknown, test: T): value is T => validateJson(value, test) === '';
-export const returnJson = <T extends TFirstJsonData>(value: unknown, test: T, valueIfError?: T): T => {
+export const returnJson = <T extends TFirstJsonData>(value: unknown, test: T, valueInsteadOfError?: T): T => {
   const message = validateJson(value, test);
   if (message === '') {
     return value as any;
   } else {
-    if (!isUndefined(valueIfError))
-      return valueIfError;
+    if (!isUndefined(valueInsteadOfError))
+      return valueInsteadOfError;
     throw new TypeError(message);
   }
 };

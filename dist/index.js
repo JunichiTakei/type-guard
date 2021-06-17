@@ -46,6 +46,26 @@ exports.TNumber = 0;
 exports.TBoolean = true;
 exports.TNull = null;
 exports.TUndefined = undefined;
+const validateBaseJsonData = (value, test, key) => {
+    if (exports.isString(test)) {
+        return exports.isString(value) ? '' : `${key}: Not String`;
+    }
+    else if (exports.isNumber(test)) {
+        return exports.isNumber(value) ? '' : `${key}: Not Number`;
+    }
+    else if (exports.isBoolean(test)) {
+        return exports.isBoolean(value) ? '' : `${key}: Not Boolean`;
+    }
+    else if (exports.isNUll(test)) {
+        return exports.isNUll(value) ? '' : `${key}: Not Null`;
+    }
+    else if (exports.isUndefined(test)) {
+        return exports.isUndefined(value) ? '' : `${key}: Not Undefined`;
+    }
+    else {
+        return 'unknown';
+    }
+};
 const TOr = (...args) => ({
     name: 'TOr',
     $or: args,
@@ -81,26 +101,6 @@ const validateArray = (value, test, key) => {
     }
     else {
         return `${key}: Not Array`;
-    }
-};
-const validateBaseJsonData = (value, test, key) => {
-    if (exports.isString(test)) {
-        return exports.isString(value) ? '' : `${key}: Not String`;
-    }
-    else if (exports.isNumber(test)) {
-        return exports.isNumber(value) ? '' : `${key}: Not Number`;
-    }
-    else if (exports.isBoolean(test)) {
-        return exports.isBoolean(value) ? '' : `${key}: Not Boolean`;
-    }
-    else if (exports.isNUll(test)) {
-        return exports.isNUll(value) ? '' : `${key}: Not Null`;
-    }
-    else if (exports.isUndefined(test)) {
-        return exports.isUndefined(value) ? '' : `${key}: Not Undefined`;
-    }
-    else {
-        return 'unknown';
     }
 };
 const validateJson = (value, test, key = 'root') => {
@@ -139,14 +139,14 @@ const validateJson = (value, test, key = 'root') => {
 exports.validateJson = validateJson;
 const isValidJson = (value, test) => exports.validateJson(value, test) === '';
 exports.isValidJson = isValidJson;
-const returnJson = (value, test, valueIfError) => {
+const returnJson = (value, test, valueInsteadOfError) => {
     const message = exports.validateJson(value, test);
     if (message === '') {
         return value;
     }
     else {
-        if (!exports.isUndefined(valueIfError))
-            return valueIfError;
+        if (!exports.isUndefined(valueInsteadOfError))
+            return valueInsteadOfError;
         throw new TypeError(message);
     }
 };

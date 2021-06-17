@@ -63,12 +63,12 @@
   };
 ```
 
-#### validateJson(jsonData: any, testData: TJsonData, valueIfError: TJsonData): 
+#### returnJson(jsonData: any, testData: TJsonData, valueInsteadOfError?: TJsonData): TJsonData
 
 ```ts
-  import { validateJson, TNumber } from '@jt/type-guard';
+  import { returnJson, TNumber } from '@jt/type-guard';
 
-  const jsonData = validateJson(require('../config.json'), {
+  const jsonData = returnJson(require('../config.json'), {
     network: {
       port: TNumber
     }
