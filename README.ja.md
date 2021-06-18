@@ -131,6 +131,7 @@ JavaScriptには型がないため、表現するための関数
  - TStrictArray
  - TArray
  - TObject
+ - TCustomize
 
 ## 例
 

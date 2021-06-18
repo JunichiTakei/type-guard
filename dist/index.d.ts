@@ -32,6 +32,7 @@ export declare const isKeyValue: (value: unknown) => value is Record<string | nu
 export declare const hasEnumerableKey: <T>(value: T) => value is Extract<T, Record<string | number, unknown>>;
 export declare const isSymbol: (value: unknown) => value is symbol;
 export declare const isFunction: (value: unknown) => value is Function;
+declare const innerName: unique symbol;
 export declare const TString: string;
 export declare const TNumber: number;
 export declare const TBoolean: boolean;
@@ -84,6 +85,14 @@ export declare const TStrictArray: TStrictArray;
 export declare const TArray: <T>(arg: T) => T[];
 export declare const TObject: <T>(arg: T) => {
     [key: string]: T;
+};
+export declare const TCustomize: <T extends TJsonData>(test: T, errorMessage: string, isFunction: (value: unknown) => boolean) => {
+    [innerName]: boolean;
+    name: string;
+    $customize: {
+        errorMessage: string;
+        isFunction: (value: unknown) => boolean;
+    };
 };
 export declare const validateJson: (value: unknown, test: TJsonData, key?: string) => string;
 export declare const isValidJson: <T extends TFirstJsonData>(value: unknown, test: T) => value is T;

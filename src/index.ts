@@ -44,7 +44,7 @@ export const isFunction = (value: unknown): value is Function => typeof value ==
 
 /* ------------------------------------------------------------------------------------------- */
 
-const innerKey = Symbol();
+const innerName = Symbol('name');
 export const TString: string = '';
 export const TNumber: number = 0;
 export const TBoolean: boolean = true;
@@ -71,12 +71,12 @@ export type TFirstJsonData = TBaseJsonData | { [property: string]: TJsonData } |
 export type TJsonData = TFirstJsonData | undefined;
 
 export const TStrict = <T extends string | number>(arg: T): T => ({
-  [innerKey]: true,
+  [innerName]: true,
   name: 'TStrict',
   $strict: arg,
 } as any);
-const isTStrict = (value: Record<number | string | symbol, unknown>): value is { name: 'TStrict'; $strict: string | number; } => value.name === 'TStrict' && !isUndefined(value.$strict);
-const validateTStrict = (value: unknown, test: { name: 'TStrict'; $strict: string | number }, key: string) => {
+const isTStrict = (value: Record<number | string | symbol, unknown>): value is { $strict: string | number } => !isUndefined(value.$strict);
+const validateTStrict = (value: unknown, test: { $strict: string | number }, key: string) => {
   const { $strict } = test;
   return value === $strict ? '' : `${key} !== ${$strict}`;
 };
@@ -93,12 +93,12 @@ interface TOr {
   <A, B, C, D, E, F, G, H, I, J>(...args: [A, B, C, D, E, F, G, H, I, J]): A | B | C | D | E | F | G | H | I | J;
 }
 export const TOr: TOr = (...args: any[]) => ({
-  [innerKey]: true,
+  [innerName]: true,
   name: 'TOr',
   $or: args,
 } as any);
-const isTOr = (value: Record<number | string | symbol, unknown>): value is { name: 'TOr'; $or: TJsonData[]; } => value.name === 'TOr' && isArray(value.$or) && value.$or.length > 1;
-const validateTOr = (value: unknown, test: { name: 'TOr'; $or: TJsonData[] }, key: string) => {
+const isTOr = (value: Record<number | string | symbol, unknown>): value is { $or: TJsonData[] } => isArray(value.$or) && value.$or.length > 1;
+const validateTOr = (value: unknown, test: { $or: TJsonData[] }, key: string) => {
   const { $or } = test;
   for (let i = 0, l = $or.length; i < l; i++) {
     const result = validateJson(value, $or[i], `${key}[${i}]`);
@@ -120,7 +120,7 @@ interface TOption {
   <A, B, C, D, E, F, G, H, I, J>(...args: [A, B, C, D, E, F, G, H, I, J]): A | B | C | D | E | F | G | H | I | J | undefined;
 }
 export const TOption: TOption = (...args: any[]) => ({
-  [innerKey]: true,
+  [innerName]: true,
   name: 'TOr',
   $or: [...args, TUndefined],
 } as any);
@@ -140,12 +140,12 @@ interface TStrictArray {
 export const TStrictArray: TStrictArray = (...args: any[]) => args as any;
 
 export const TArray = <T>(arg: T): T[] => ({
-  [innerKey]: true,
+  [innerName]: true,
   name: 'TArray',
   $array: arg,
 } as any);
-const isTArray = (value: Record<number | string | symbol, unknown>): value is { name: 'TArray'; $array: TJsonData; } => value.name === 'TArray' && !isUndefined(value.$array);
-const validateTArray = (value: unknown, test: { name: 'TArray'; $array: TJsonData }, key: string) => {
+const isTArray = (value: Record<number | string | symbol, unknown>): value is { $array: TJsonData } => !isUndefined(value.$array);
+const validateTArray = (value: unknown, test: { $array: TJsonData }, key: string) => {
   if (isArray(value)) {
     const { $array } = test;
     for (let i = 0, l = value.length; i < l; i++) {
@@ -159,12 +159,12 @@ const validateTArray = (value: unknown, test: { name: 'TArray'; $array: TJsonDat
 };
 
 export const TObject = <T>(arg: T): { [key: string]: T} => ({
-  [innerKey]: true,
+  [innerName]: true,
   name: 'TObject',
   $object: arg,
 } as any);
-const isTObject = (value: Record<number | string | symbol, unknown>): value is { name: 'TObject'; $object: TJsonData; } => value.name === 'TObject' && !isUndefined(value.$array);
-const validateTObject = (value: unknown, test: { name: 'TObject'; $object: TJsonData }, key: string) => {
+const isTObject = (value: Record<number | string | symbol, unknown>): value is { $object: TJsonData; } => !isUndefined(value.$object);
+const validateTObject = (value: unknown, test: { $object: TJsonData }, key: string) => {
   if (isKeyValue(value)) {
     const { $object } = test;
     for (const property in value) {
@@ -177,21 +177,51 @@ const validateTObject = (value: unknown, test: { name: 'TObject'; $object: TJson
   }
 };
 
+export const TCustomize = <T extends TJsonData>(test: T, errorMessage: string, isFunction: (value: unknown) => boolean) => ({
+  [innerName]: true,
+  name: 'TCustomize',
+  $customize: {
+    errorMessage,  
+    isFunction,
+  },
+});
+const isTCustomize = (value: Record<number | string | symbol, unknown>): value is { $customize: { errorMessage: string; isFunction: (value: unknown) => boolean; } } => !isUndefined(value.$customize);
+const validateTCustomize = (value: unknown, test: { $customize: { errorMessage: string; isFunction: (value: unknown) => boolean; } }, key: string) => {
+  const { errorMessage, isFunction } = test.$customize;
+  return isFunction(value) ? '' : `${key}: ${errorMessage}`;
+};
+
 export const validateJson = (value: unknown, test: TJsonData, key: string = 'root'): string => {
   if (isKeyValue(test)) {
-    if (innerKey in test) {
-      if (isTOr(test)) {
-        return validateTOr(value, test, key);
+    if (innerName in test) {
+      switch (test.name) {
+        case 'TStrict':
+          if (isTStrict(test)) {
+            return validateTStrict(value, test, key);
+          }
+          break;
+        case 'TOr':
+          if (isTOr(test)) {
+            return validateTOr(value, test, key);
+          }
+          break;
+        case 'TArray':
+          if (isTArray(test)) {
+            return validateTArray(value, test, key);
+          }
+          break;
+        case 'TObject':
+          if (isTObject(test)) {
+            return validateTObject(value, test, key);
+          }
+          break;
+        case 'TCustomize':
+          if (isTCustomize(test)) {
+            return validateTCustomize(value, test, key);
+          }
+          break;
       }
-      if (isTArray(test)) {
-        return validateTArray(value, test, key);
-      }
-      if (isTObject(test)) {
-        return validateTObject(value, test, key);
-      }
-      if (isTStrict(test)) {
-        return validateTStrict(value, test, key);
-      }
+      return 'unknown';
     }
     if (isKeyValue(value)) {
       for (const property in test) {

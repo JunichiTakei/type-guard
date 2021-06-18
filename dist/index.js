@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.returnJson = exports.isValidJson = exports.validateJson = exports.TObject = exports.TArray = exports.TStrictArray = exports.TOption = exports.TOr = exports.TStrict = exports.TUndefined = exports.TNull = exports.TBoolean = exports.TNumber = exports.TString = exports.isFunction = exports.isSymbol = exports.hasEnumerableKey = exports.isKeyValue = exports.isObject = exports.isArrayOfStringNotEmpty = exports.isArrayOfString = exports.isArrayOfNumber = exports.isArray = exports.isBoolean = exports.isValidNegativeInteger = exports.isValidPositiveInteger = exports.isValidInteger = exports.isValidNegativeNumber = exports.isValidPositiveNumber = exports.isNumber = exports.isStringNotEmpty = exports.isString = exports.isNull = exports.isUndefined = void 0;
+exports.returnJson = exports.isValidJson = exports.validateJson = exports.TCustomize = exports.TObject = exports.TArray = exports.TStrictArray = exports.TOption = exports.TOr = exports.TStrict = exports.TUndefined = exports.TNull = exports.TBoolean = exports.TNumber = exports.TString = exports.isFunction = exports.isSymbol = exports.hasEnumerableKey = exports.isKeyValue = exports.isObject = exports.isArrayOfStringNotEmpty = exports.isArrayOfString = exports.isArrayOfNumber = exports.isArray = exports.isBoolean = exports.isValidNegativeInteger = exports.isValidPositiveInteger = exports.isValidInteger = exports.isValidNegativeNumber = exports.isValidPositiveNumber = exports.isNumber = exports.isStringNotEmpty = exports.isString = exports.isNull = exports.isUndefined = void 0;
 const isUndefined = (value) => typeof value === 'undefined';
 exports.isUndefined = isUndefined;
 const isNull = (value) => value === null;
@@ -42,7 +42,7 @@ exports.isSymbol = isSymbol;
 const isFunction = (value) => typeof value === 'function';
 exports.isFunction = isFunction;
 /* ------------------------------------------------------------------------------------------- */
-const innerKey = Symbol();
+const innerName = Symbol('name');
 exports.TString = '';
 exports.TNumber = 0;
 exports.TBoolean = true;
@@ -69,23 +69,23 @@ const validateBaseJsonData = (value, test, key) => {
     }
 };
 const TStrict = (arg) => ({
-    [innerKey]: true,
+    [innerName]: true,
     name: 'TStrict',
     $strict: arg,
 });
 exports.TStrict = TStrict;
-const isTStrict = (value) => value.name === 'TStrict' && !exports.isUndefined(value.$strict);
+const isTStrict = (value) => !exports.isUndefined(value.$strict);
 const validateTStrict = (value, test, key) => {
     const { $strict } = test;
     return value === $strict ? '' : `${key} !== ${$strict}`;
 };
 const TOr = (...args) => ({
-    [innerKey]: true,
+    [innerName]: true,
     name: 'TOr',
     $or: args,
 });
 exports.TOr = TOr;
-const isTOr = (value) => value.name === 'TOr' && exports.isArray(value.$or) && value.$or.length > 1;
+const isTOr = (value) => exports.isArray(value.$or) && value.$or.length > 1;
 const validateTOr = (value, test, key) => {
     const { $or } = test;
     for (let i = 0, l = $or.length; i < l; i++) {
@@ -96,7 +96,7 @@ const validateTOr = (value, test, key) => {
     return `${key}: None`;
 };
 const TOption = (...args) => ({
-    [innerKey]: true,
+    [innerName]: true,
     name: 'TOr',
     $or: [...args, exports.TUndefined],
 });
@@ -104,12 +104,12 @@ exports.TOption = TOption;
 const TStrictArray = (...args) => args;
 exports.TStrictArray = TStrictArray;
 const TArray = (arg) => ({
-    [innerKey]: true,
+    [innerName]: true,
     name: 'TArray',
     $array: arg,
 });
 exports.TArray = TArray;
-const isTArray = (value) => value.name === 'TArray' && !exports.isUndefined(value.$array);
+const isTArray = (value) => !exports.isUndefined(value.$array);
 const validateTArray = (value, test, key) => {
     if (exports.isArray(value)) {
         const { $array } = test;
@@ -125,12 +125,12 @@ const validateTArray = (value, test, key) => {
     }
 };
 const TObject = (arg) => ({
-    [innerKey]: true,
+    [innerName]: true,
     name: 'TObject',
     $object: arg,
 });
 exports.TObject = TObject;
-const isTObject = (value) => value.name === 'TObject' && !exports.isUndefined(value.$array);
+const isTObject = (value) => !exports.isUndefined(value.$object);
 const validateTObject = (value, test, key) => {
     if (exports.isKeyValue(value)) {
         const { $object } = test;
@@ -145,21 +145,51 @@ const validateTObject = (value, test, key) => {
         return `${key}: Not Object`;
     }
 };
+const TCustomize = (test, errorMessage, isFunction) => ({
+    [innerName]: true,
+    name: 'TCustomize',
+    $customize: {
+        errorMessage,
+        isFunction,
+    },
+});
+exports.TCustomize = TCustomize;
+const isTCustomize = (value) => !exports.isUndefined(value.$customize);
+const validateTCustomize = (value, test, key) => {
+    const { errorMessage, isFunction } = test.$customize;
+    return isFunction(value) ? '' : `${key}: ${errorMessage}`;
+};
 const validateJson = (value, test, key = 'root') => {
     if (exports.isKeyValue(test)) {
-        if (innerKey in test) {
-            if (isTOr(test)) {
-                return validateTOr(value, test, key);
+        if (innerName in test) {
+            switch (test.name) {
+                case 'TStrict':
+                    if (isTStrict(test)) {
+                        return validateTStrict(value, test, key);
+                    }
+                    break;
+                case 'TOr':
+                    if (isTOr(test)) {
+                        return validateTOr(value, test, key);
+                    }
+                    break;
+                case 'TArray':
+                    if (isTArray(test)) {
+                        return validateTArray(value, test, key);
+                    }
+                    break;
+                case 'TObject':
+                    if (isTObject(test)) {
+                        return validateTObject(value, test, key);
+                    }
+                    break;
+                case 'TCustomize':
+                    if (isTCustomize(test)) {
+                        return validateTCustomize(value, test, key);
+                    }
+                    break;
             }
-            if (isTArray(test)) {
-                return validateTArray(value, test, key);
-            }
-            if (isTObject(test)) {
-                return validateTObject(value, test, key);
-            }
-            if (isTStrict(test)) {
-                return validateTStrict(value, test, key);
-            }
+            return 'unknown';
         }
         if (exports.isKeyValue(value)) {
             for (const property in test) {

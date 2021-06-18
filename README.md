@@ -91,6 +91,7 @@
  - TStrictArray
  - TArray
  - TObject
+ - TCustomize
 
 ## Example
 
