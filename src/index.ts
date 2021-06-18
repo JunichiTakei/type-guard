@@ -1,6 +1,6 @@
 export const isUndefined = (value: unknown): value is undefined => typeof value === 'undefined';
 
-export const isNUll = (value: unknown): value is null => value === null;
+export const isNull = (value: unknown): value is null => value === null;
 
 export const isString = (value: unknown): value is string => typeof value === 'string';
 interface IsStringNotEmpty {
@@ -35,14 +35,16 @@ export const isArrayOfStringNotEmpty = (value: unknown): value is string[] => Ar
 
 export const isObject = (value: unknown): value is object => typeof value === 'object';
 
-export const isKeyValue = (value: unknown): value is Record<number | string | symbol, unknown> => isObject(value) && !isNUll(value) && !isArray(value);
+export const isKeyValue = (value: unknown): value is Record<number | string | symbol, unknown> => isObject(value) && !isNull(value) && !isArray(value);
 export const hasEnumerableKey = <T>(value: T): value is Extract<T, Record<number | string, unknown>> => isKeyValue(value) && Object.keys(value).length !== 0;
 
 export const isSymbol = (value: unknown): value is symbol => typeof value === 'symbol';
 
 export const isFunction = (value: unknown): value is Function => typeof value === 'function';
 
+/* ------------------------------------------------------------------------------------------- */
 
+const innerKey = Symbol();
 export const TString: string = '';
 export const TNumber: number = 0;
 export const TBoolean: boolean = true;
@@ -57,8 +59,8 @@ const validateBaseJsonData = (value: unknown, test: TBaseJsonData | undefined, k
     return isNumber(value) ? '' : `${key}: Not Number`;
   } else if (isBoolean(test)) {
     return isBoolean(value) ? '' : `${key}: Not Boolean`;
-  } else if (isNUll(test)) {
-    return isNUll(value) ? '' : `${key}: Not Null`;
+  } else if (isNull(test)) {
+    return isNull(value) ? '' : `${key}: Not Null`;
   } else if (isUndefined(test)) {
     return isUndefined(value) ? '' : `${key}: Not Undefined`;
   } else {
@@ -67,6 +69,17 @@ const validateBaseJsonData = (value: unknown, test: TBaseJsonData | undefined, k
 };
 export type TFirstJsonData = TBaseJsonData | { [property: string]: TJsonData } | TJsonData[];
 export type TJsonData = TFirstJsonData | undefined;
+
+export const TStrict = <T extends string | number>(arg: T): T => ({
+  [innerKey]: true,
+  name: 'TStrict',
+  $strict: arg,
+} as any);
+const isTStrict = (value: Record<number | string | symbol, unknown>): value is { name: 'TStrict'; $strict: string | number; } => value.name === 'TStrict' && !isUndefined(value.$strict);
+const validateTStrict = (value: unknown, test: { name: 'TStrict'; $strict: string | number }, key: string) => {
+  const { $strict } = test;
+  return value === $strict ? '' : `${key} !== ${$strict}`;
+};
 
 interface TOr {
   <A, B>(...args: [A, B]): A | B;
@@ -80,11 +93,12 @@ interface TOr {
   <A, B, C, D, E, F, G, H, I, J>(...args: [A, B, C, D, E, F, G, H, I, J]): A | B | C | D | E | F | G | H | I | J;
 }
 export const TOr: TOr = (...args: any[]) => ({
+  [innerKey]: true,
   name: 'TOr',
   $or: args,
 } as any);
-const isTOr = (value: Record<number | string | symbol, unknown>): value is { name: 'TOr'; $or: TJsonData[] } => value.name === 'TOr' && isArray(value.$or) && value.$or.length > 1;
-const validateOr = (value: unknown, test: { name: 'TOr'; $or: TJsonData[] }, key: string) => {
+const isTOr = (value: Record<number | string | symbol, unknown>): value is { name: 'TOr'; $or: TJsonData[]; } => value.name === 'TOr' && isArray(value.$or) && value.$or.length > 1;
+const validateTOr = (value: unknown, test: { name: 'TOr'; $or: TJsonData[] }, key: string) => {
   const { $or } = test;
   for (let i = 0, l = $or.length; i < l; i++) {
     const result = validateJson(value, $or[i], `${key}[${i}]`);
@@ -92,6 +106,24 @@ const validateOr = (value: unknown, test: { name: 'TOr'; $or: TJsonData[] }, key
   }
   return `${key}: None`;
 };
+
+interface TOption {
+  <A>(...args: [A]): A | undefined;
+  <A, B>(...args: [A, B]): A | B | undefined;
+  <A, B, C>(...args: [A, B, C]): A | B | C | undefined;
+  <A, B, C, D>(...args: [A, B, C, D]): A | B | C | D | undefined;
+  <A, B, C, D, E>(...args: [A, B, C, D, E]): A | B | C | D | E | undefined;
+  <A, B, C, D, E, F>(...args: [A, B, C, D, E, F]): A | B | C | D | E | F | undefined;
+  <A, B, C, D, E, F, G>(...args: [A, B, C, D, E, F, G]): A | B | C | D | E | F | G | undefined;
+  <A, B, C, D, E, F, G, H>(...args: [A, B, C, D, E, F, G, H]): A | B | C | D | E | F | G | H | undefined;
+  <A, B, C, D, E, F, G, H, I>(...args: [A, B, C, D, E, F, G, H, I]): A | B | C | D | E | F | G | H | I | undefined;
+  <A, B, C, D, E, F, G, H, I, J>(...args: [A, B, C, D, E, F, G, H, I, J]): A | B | C | D | E | F | G | H | I | J | undefined;
+}
+export const TOption: TOption = (...args: any[]) => ({
+  [innerKey]: true,
+  name: 'TOr',
+  $or: [...args, TUndefined],
+} as any);
 
 interface TStrictArray {
   <A>(...args: [A]): [A];
@@ -108,11 +140,12 @@ interface TStrictArray {
 export const TStrictArray: TStrictArray = (...args: any[]) => args as any;
 
 export const TArray = <T>(arg: T): T[] => ({
+  [innerKey]: true,
   name: 'TArray',
   $array: arg,
 } as any);
-const isTArray = (value: Record<number | string | symbol, unknown>): value is { name: 'TArray'; $array: TJsonData } => value.name === 'TArray' && !isUndefined(value.$array);
-const validateArray = (value: unknown, test: { name: 'TArray'; $array: TJsonData }, key: string) => {
+const isTArray = (value: Record<number | string | symbol, unknown>): value is { name: 'TArray'; $array: TJsonData; } => value.name === 'TArray' && !isUndefined(value.$array);
+const validateTArray = (value: unknown, test: { name: 'TArray'; $array: TJsonData }, key: string) => {
   if (isArray(value)) {
     const { $array } = test;
     for (let i = 0, l = value.length; i < l; i++) {
@@ -125,13 +158,40 @@ const validateArray = (value: unknown, test: { name: 'TArray'; $array: TJsonData
   }
 };
 
+export const TObject = <T>(arg: T): { [key: string]: T} => ({
+  [innerKey]: true,
+  name: 'TObject',
+  $object: arg,
+} as any);
+const isTObject = (value: Record<number | string | symbol, unknown>): value is { name: 'TObject'; $object: TJsonData; } => value.name === 'TObject' && !isUndefined(value.$array);
+const validateTObject = (value: unknown, test: { name: 'TObject'; $object: TJsonData }, key: string) => {
+  if (isKeyValue(value)) {
+    const { $object } = test;
+    for (const property in value) {
+      const result = validateJson(value[property], $object, `${key}.${property}`);
+      if (result !== '') return result;
+    }
+    return '';
+  } else {
+    return `${key}: Not Object`;
+  }
+};
+
 export const validateJson = (value: unknown, test: TJsonData, key: string = 'root'): string => {
   if (isKeyValue(test)) {
-    if (isTOr(test)) {
-      return validateOr(value, test, key);
-    }
-    if (isTArray(test)) {
-      return validateArray(value, test, key);
+    if (innerKey in test) {
+      if (isTOr(test)) {
+        return validateTOr(value, test, key);
+      }
+      if (isTArray(test)) {
+        return validateTArray(value, test, key);
+      }
+      if (isTObject(test)) {
+        return validateTObject(value, test, key);
+      }
+      if (isTStrict(test)) {
+        return validateTStrict(value, test, key);
+      }
     }
     if (isKeyValue(value)) {
       for (const property in test) {
@@ -165,3 +225,5 @@ export const returnJson = <T extends TFirstJsonData>(value: unknown, test: T, va
     throw new TypeError(message);
   }
 };
+
+const a = returnJson({test: 'a'}, { test: 'a'})

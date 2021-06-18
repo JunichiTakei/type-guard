@@ -1,5 +1,5 @@
 export declare const isUndefined: (value: unknown) => value is undefined;
-export declare const isNUll: (value: unknown) => value is null;
+export declare const isNull: (value: unknown) => value is null;
 export declare const isString: (value: unknown) => value is string;
 interface IsStringNotEmpty {
     (value: ''): value is never;
@@ -42,6 +42,7 @@ export declare type TFirstJsonData = TBaseJsonData | {
     [property: string]: TJsonData;
 } | TJsonData[];
 export declare type TJsonData = TFirstJsonData | undefined;
+export declare const TStrict: <T extends string | number>(arg: T) => T;
 interface TOr {
     <A, B>(...args: [A, B]): A | B;
     <A, B, C>(...args: [A, B, C]): A | B | C;
@@ -54,6 +55,19 @@ interface TOr {
     <A, B, C, D, E, F, G, H, I, J>(...args: [A, B, C, D, E, F, G, H, I, J]): A | B | C | D | E | F | G | H | I | J;
 }
 export declare const TOr: TOr;
+interface TOption {
+    <A>(...args: [A]): A | undefined;
+    <A, B>(...args: [A, B]): A | B | undefined;
+    <A, B, C>(...args: [A, B, C]): A | B | C | undefined;
+    <A, B, C, D>(...args: [A, B, C, D]): A | B | C | D | undefined;
+    <A, B, C, D, E>(...args: [A, B, C, D, E]): A | B | C | D | E | undefined;
+    <A, B, C, D, E, F>(...args: [A, B, C, D, E, F]): A | B | C | D | E | F | undefined;
+    <A, B, C, D, E, F, G>(...args: [A, B, C, D, E, F, G]): A | B | C | D | E | F | G | undefined;
+    <A, B, C, D, E, F, G, H>(...args: [A, B, C, D, E, F, G, H]): A | B | C | D | E | F | G | H | undefined;
+    <A, B, C, D, E, F, G, H, I>(...args: [A, B, C, D, E, F, G, H, I]): A | B | C | D | E | F | G | H | I | undefined;
+    <A, B, C, D, E, F, G, H, I, J>(...args: [A, B, C, D, E, F, G, H, I, J]): A | B | C | D | E | F | G | H | I | J | undefined;
+}
+export declare const TOption: TOption;
 interface TStrictArray {
     <A>(...args: [A]): [A];
     <A, B>(...args: [A, B]): [A, B];
@@ -68,6 +82,9 @@ interface TStrictArray {
 }
 export declare const TStrictArray: TStrictArray;
 export declare const TArray: <T>(arg: T) => T[];
+export declare const TObject: <T>(arg: T) => {
+    [key: string]: T;
+};
 export declare const validateJson: (value: unknown, test: TJsonData, key?: string) => string;
 export declare const isValidJson: <T extends TFirstJsonData>(value: unknown, test: T) => value is T;
 export declare const returnJson: <T extends TFirstJsonData>(value: unknown, test: T, valueInsteadOfError?: T | undefined) => T;

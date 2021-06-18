@@ -125,9 +125,12 @@ JavaScriptには型がないため、表現するための関数
 型のためにキャストを行っている  
 実際の返り値と型は一致していないので、単独では利用しないこと
 
+ - TStrict
  - TOr
+ - TOption
  - TStrictArray
  - TArray
+ - TObject
 
 ## 例
 

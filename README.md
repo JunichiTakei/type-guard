@@ -85,9 +85,12 @@
 
 ### JSON function
 
+ - TStrict
  - TOr
+ - TOption
  - TStrictArray
  - TArray
+ - TObject
 
 ## Example
 

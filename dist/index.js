@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.returnJson = exports.isValidJson = exports.validateJson = exports.TArray = exports.TStrictArray = exports.TOr = exports.TUndefined = exports.TNull = exports.TBoolean = exports.TNumber = exports.TString = exports.isFunction = exports.isSymbol = exports.hasEnumerableKey = exports.isKeyValue = exports.isObject = exports.isArrayOfStringNotEmpty = exports.isArrayOfString = exports.isArrayOfNumber = exports.isArray = exports.isBoolean = exports.isValidNegativeInteger = exports.isValidPositiveInteger = exports.isValidInteger = exports.isValidNegativeNumber = exports.isValidPositiveNumber = exports.isNumber = exports.isStringNotEmpty = exports.isString = exports.isNUll = exports.isUndefined = void 0;
+exports.returnJson = exports.isValidJson = exports.validateJson = exports.TObject = exports.TArray = exports.TStrictArray = exports.TOption = exports.TOr = exports.TStrict = exports.TUndefined = exports.TNull = exports.TBoolean = exports.TNumber = exports.TString = exports.isFunction = exports.isSymbol = exports.hasEnumerableKey = exports.isKeyValue = exports.isObject = exports.isArrayOfStringNotEmpty = exports.isArrayOfString = exports.isArrayOfNumber = exports.isArray = exports.isBoolean = exports.isValidNegativeInteger = exports.isValidPositiveInteger = exports.isValidInteger = exports.isValidNegativeNumber = exports.isValidPositiveNumber = exports.isNumber = exports.isStringNotEmpty = exports.isString = exports.isNull = exports.isUndefined = void 0;
 const isUndefined = (value) => typeof value === 'undefined';
 exports.isUndefined = isUndefined;
-const isNUll = (value) => value === null;
-exports.isNUll = isNUll;
+const isNull = (value) => value === null;
+exports.isNull = isNull;
 const isString = (value) => typeof value === 'string';
 exports.isString = isString;
 const isStringNotEmpty = (value) => exports.isString(value) && value !== '';
@@ -33,7 +33,7 @@ const isArrayOfStringNotEmpty = (value) => Array.isArray(value) && value.every(v
 exports.isArrayOfStringNotEmpty = isArrayOfStringNotEmpty;
 const isObject = (value) => typeof value === 'object';
 exports.isObject = isObject;
-const isKeyValue = (value) => exports.isObject(value) && !exports.isNUll(value) && !exports.isArray(value);
+const isKeyValue = (value) => exports.isObject(value) && !exports.isNull(value) && !exports.isArray(value);
 exports.isKeyValue = isKeyValue;
 const hasEnumerableKey = (value) => exports.isKeyValue(value) && Object.keys(value).length !== 0;
 exports.hasEnumerableKey = hasEnumerableKey;
@@ -41,6 +41,8 @@ const isSymbol = (value) => typeof value === 'symbol';
 exports.isSymbol = isSymbol;
 const isFunction = (value) => typeof value === 'function';
 exports.isFunction = isFunction;
+/* ------------------------------------------------------------------------------------------- */
+const innerKey = Symbol();
 exports.TString = '';
 exports.TNumber = 0;
 exports.TBoolean = true;
@@ -56,8 +58,8 @@ const validateBaseJsonData = (value, test, key) => {
     else if (exports.isBoolean(test)) {
         return exports.isBoolean(value) ? '' : `${key}: Not Boolean`;
     }
-    else if (exports.isNUll(test)) {
-        return exports.isNUll(value) ? '' : `${key}: Not Null`;
+    else if (exports.isNull(test)) {
+        return exports.isNull(value) ? '' : `${key}: Not Null`;
     }
     else if (exports.isUndefined(test)) {
         return exports.isUndefined(value) ? '' : `${key}: Not Undefined`;
@@ -66,13 +68,25 @@ const validateBaseJsonData = (value, test, key) => {
         return 'unknown';
     }
 };
+const TStrict = (arg) => ({
+    [innerKey]: true,
+    name: 'TStrict',
+    $strict: arg,
+});
+exports.TStrict = TStrict;
+const isTStrict = (value) => value.name === 'TStrict' && !exports.isUndefined(value.$strict);
+const validateTStrict = (value, test, key) => {
+    const { $strict } = test;
+    return value === $strict ? '' : `${key} !== ${$strict}`;
+};
 const TOr = (...args) => ({
+    [innerKey]: true,
     name: 'TOr',
     $or: args,
 });
 exports.TOr = TOr;
 const isTOr = (value) => value.name === 'TOr' && exports.isArray(value.$or) && value.$or.length > 1;
-const validateOr = (value, test, key) => {
+const validateTOr = (value, test, key) => {
     const { $or } = test;
     for (let i = 0, l = $or.length; i < l; i++) {
         const result = exports.validateJson(value, $or[i], `${key}[${i}]`);
@@ -81,15 +95,22 @@ const validateOr = (value, test, key) => {
     }
     return `${key}: None`;
 };
+const TOption = (...args) => ({
+    [innerKey]: true,
+    name: 'TOr',
+    $or: [...args, exports.TUndefined],
+});
+exports.TOption = TOption;
 const TStrictArray = (...args) => args;
 exports.TStrictArray = TStrictArray;
 const TArray = (arg) => ({
+    [innerKey]: true,
     name: 'TArray',
     $array: arg,
 });
 exports.TArray = TArray;
 const isTArray = (value) => value.name === 'TArray' && !exports.isUndefined(value.$array);
-const validateArray = (value, test, key) => {
+const validateTArray = (value, test, key) => {
     if (exports.isArray(value)) {
         const { $array } = test;
         for (let i = 0, l = value.length; i < l; i++) {
@@ -103,13 +124,42 @@ const validateArray = (value, test, key) => {
         return `${key}: Not Array`;
     }
 };
+const TObject = (arg) => ({
+    [innerKey]: true,
+    name: 'TObject',
+    $object: arg,
+});
+exports.TObject = TObject;
+const isTObject = (value) => value.name === 'TObject' && !exports.isUndefined(value.$array);
+const validateTObject = (value, test, key) => {
+    if (exports.isKeyValue(value)) {
+        const { $object } = test;
+        for (const property in value) {
+            const result = exports.validateJson(value[property], $object, `${key}.${property}`);
+            if (result !== '')
+                return result;
+        }
+        return '';
+    }
+    else {
+        return `${key}: Not Object`;
+    }
+};
 const validateJson = (value, test, key = 'root') => {
     if (exports.isKeyValue(test)) {
-        if (isTOr(test)) {
-            return validateOr(value, test, key);
-        }
-        if (isTArray(test)) {
-            return validateArray(value, test, key);
+        if (innerKey in test) {
+            if (isTOr(test)) {
+                return validateTOr(value, test, key);
+            }
+            if (isTArray(test)) {
+                return validateTArray(value, test, key);
+            }
+            if (isTObject(test)) {
+                return validateTObject(value, test, key);
+            }
+            if (isTStrict(test)) {
+                return validateTStrict(value, test, key);
+            }
         }
         if (exports.isKeyValue(value)) {
             for (const property in test) {
@@ -151,4 +201,5 @@ const returnJson = (value, test, valueInsteadOfError) => {
     }
 };
 exports.returnJson = returnJson;
+const a = exports.returnJson({ test: 'a' }, { test: 'a' });
 //# sourceMappingURL=index.js.map
