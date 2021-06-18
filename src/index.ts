@@ -177,14 +177,14 @@ const validateTObject = (value: unknown, test: { $object: TJsonData }, key: stri
   }
 };
 
-export const TCustomize = <T extends TJsonData>(test: T, errorMessage: string, isFunction: (value: unknown) => boolean) => ({
+export const TCustomize = <T extends TJsonData>(test: T, errorMessage: string, isFunction: (value: unknown) => boolean): T => ({
   [innerName]: true,
   name: 'TCustomize',
   $customize: {
     errorMessage,  
     isFunction,
   },
-});
+} as any);
 const isTCustomize = (value: Record<number | string | symbol, unknown>): value is { $customize: { errorMessage: string; isFunction: (value: unknown) => boolean; } } => !isUndefined(value.$customize);
 const validateTCustomize = (value: unknown, test: { $customize: { errorMessage: string; isFunction: (value: unknown) => boolean; } }, key: string) => {
   const { errorMessage, isFunction } = test.$customize;
