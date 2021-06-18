@@ -100,11 +100,16 @@ export const TOr: TOr = (...args: any[]) => ({
 const isTOr = (value: Record<number | string | symbol, unknown>): value is { $or: TJsonData[] } => isArray(value.$or) && value.$or.length > 1;
 const validateTOr = (value: unknown, test: { $or: TJsonData[] }, key: string) => {
   const { $or } = test;
+  const errors = [];
   for (let i = 0, l = $or.length; i < l; i++) {
-    const result = validateJson(value, $or[i], `${key}[${i}]`);
-    if (result === '') return '';
+    const result = validateJson(value, $or[i], key);
+    if (result === '') {
+      return '';
+    } else {
+      errors.push(result);
+    }
   }
-  return `${key}: None`;
+  return `${key}: [${errors.join(', ')}]`;
 };
 
 interface TOption {
@@ -233,11 +238,15 @@ export const validateJson = (value: unknown, test: TJsonData, key: string = 'roo
     return `${key}: Not Object`;
   } else if (isArray(test)) {
     if (isArray(value)) {
-      for (let i = 0, l = test.length; i < l; i++) {
-        const result = validateJson(value[i], test[i], `${key}[${i}]`);
-        if (result !== '') return result;
+      if (value.length === test.length) {
+        for (let i = 0, l = test.length; i < l; i++) {
+          const result = validateJson(value[i], test[i], `${key}[${i}]`);
+          if (result !== '') return result;
+        }
+        return '';
+      } else {
+        return `${key}: Arrays' length are different from each other`;
       }
-      return '';
     } else {
       return `${key}: Not Array`;
     }
